@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.controllers.youtube_controller import router as youtube_router
 
@@ -18,6 +19,9 @@ app.add_middleware(
 )
 
 app.include_router(youtube_router)
+
+# Mount the static files directory
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 @app.get("/")
 async def root():

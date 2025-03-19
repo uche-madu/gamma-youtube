@@ -13,8 +13,10 @@ class State(AgentState):
 # Pydantic models for API request and response
 class QueryRequest(BaseModel):
     query: str
+    tts: bool | None = False
 
 class SummarizationResponse(BaseModel):
     title: str
     summary: str
     video_link: str | None = None
+    audio_url: str | None = None

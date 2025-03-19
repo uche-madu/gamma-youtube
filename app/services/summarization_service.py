@@ -1,27 +1,26 @@
 # app/services/summarization_service.py
-import asyncio
 import json
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableConfig
+from langchain.chat_models import init_chat_model
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from app.models.state import State
+from app.schemas.state import State
 from app.services.youtube_service import search_youtube_video, get_youtube_transcript
-from app.utils.threading_utils import run_in_executor
-
+from app.services.tts_service import text_to_speech
 from app.config import MODEL_NAME, TOGETHER_API_KEY
-from langchain_together import ChatTogether
+
 
 # Initialize the LLM instance.
-llm = ChatTogether(
-    model="meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
+llm = init_chat_model( 
+    model=MODEL_NAME, 
+    model_provider="together",
+    temperature=0.4,
+    api_key=TOGETHER_API_KEY,
 )
 
 # Create the list of tools and bind them.
@@ -39,10 +38,10 @@ summarize_prompt = ChatPromptTemplate(
             **Objective**: Provide a well-structured, engaging, and detailed summary based on the given transcript chunk.
             
             - Capture the **key points, themes, and emotions**.
-            - If it's a **story-driven** video (e.g., movies, vlogs), highlight **plot twists, character actions, and motivations**.
+            - If it's a **story-driven video** (e.g., movies, vlogs), enhance descriptions of **plot developments and twists, character actions, emotional moments, motivations, plot setting, location, time**
             - If it's **educational or informational**, focus on the **main insights, lessons, and takeaways**.
             - Keep it **concise yet descriptive**, making the user feel like they watched the video.
-            - Don't mention "transcript" in the summary.
+            - Don't mention "transcript" in the summary. Use a narrative tone as if you were Chimamanda Adichie or Morgan Freeman.
             
             Here is the first transcript segment:
             ----------------
@@ -90,12 +89,12 @@ refine_summary_chain = refine_prompt | llm_with_tools | StrOutputParser()
 
 
 # Workflow node functions.
-def chunk_transcript(state: State, config: RunnableConfig, chunk_size: int = 4000):
+def chunk_transcript(state: State, config: RunnableConfig, chunk_size: int = 60000):
     """
     Split the transcript into manageable chunks.
     """
     transcript = state.get("transcript")
-    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=400)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=500)
     transcript_chunks = splitter.split_text(transcript)
     return {"contents": transcript_chunks}
 
@@ -173,7 +172,7 @@ graph.add_conditional_edges("refine_summary", should_refine, {
 app = graph.compile()
 
 # Function that invokes the workflow with a query.
-async def summarize_video(query: str) -> dict:
+async def summarize_video(query: str, tts: bool = False) -> dict:
     final_state = None
     async for chunk in app.astream(
         {"messages": [("user", query)]},
@@ -184,19 +183,23 @@ async def summarize_video(query: str) -> dict:
 
     summary = final_state.get("summary", "") if final_state else ""
     video_link = None
+    title = None
 
     if final_state:
         for message in final_state.get("messages", []):
             if getattr(message, "name", None) == "search_youtube_video":
                 try:
-                    # Convert string content to a dictionary
-                    payload = json.loads(message.content)  # Parse the JSON string
-                    video_link = payload.get("link")  # Extract video link
+                    payload = json.loads(message.content)
+                    video_link = payload.get("link")
                     title = payload.get("title")
-                    break  # Stop after finding the first valid link
+                    break
                 except json.JSONDecodeError:
-                    continue  # Skip if content is not valid JSON
+                    continue
 
-    return {"title": title, "summary": summary, "video_link": video_link}
+    audio_url = None
+    if tts and summary:
+        audio_path = text_to_speech(summary)
+        audio_url = f"/{audio_path}"  # Assuming FastAPI serves static files from the 'assets' directory
 
+    return {"title": title, "summary": summary, "video_link": video_link, "audio_url": audio_url}
 
