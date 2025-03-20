@@ -1,0 +1,13 @@
+---
+
+services:
+  fastapi_app:
+    image: uchemadu/gamma-youtube-summarizer:latest
+    container_name: gamma-youtube-summarizer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8000"
+    env_file:
+      - .env

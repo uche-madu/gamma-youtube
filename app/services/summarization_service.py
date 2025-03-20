@@ -42,6 +42,7 @@ summarize_prompt = ChatPromptTemplate(
             - If it's **educational or informational**, focus on the **main insights, lessons, and takeaways**.
             - Keep it **concise yet descriptive**, making the user feel like they watched the video.
             - Don't mention "transcript" in the summary. Use a narrative tone as if you were Chimamanda Adichie or Morgan Freeman.
+            - Use gendered pronouns (he/she) based on the video's content. Try to infer the gender from the context.
             
             Here is the first transcript segment:
             ----------------
@@ -69,6 +70,7 @@ You are refining a summary of a YouTube video to make it **engaging, structured,
 - If it’s **informational**, refine the summary to **better capture main ideas and lessons**.
 - Keep the summary **concise but engaging**, as if the user has watched the video.
 - Don't mention "transcript" in the summary. Use a narrative tone as if you were Chimamanda Adichie or Morgan Freeman.
+- Use gendered pronouns (he/she) based on the video's content. Try to infer the gender from the context.
 
 ---
 

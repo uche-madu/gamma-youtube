@@ -16,7 +16,7 @@ class QueryRequest(BaseModel):
     tts: bool | None = False
 
 class SummarizationResponse(BaseModel):
-    title: str
+    title: str | None = None
     summary: str
     video_link: str | None = None
     audio_url: str | None = None

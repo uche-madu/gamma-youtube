@@ -1,0 +1,32 @@
+# Exclude Python cache directories and files
+__pycache__/
+*.pyc
+*.pyo
+
+# Exclude virtual environments
+.venv/
+.env
+
+# Exclude version control directories and files
+.git/
+.gitignore
+
+# Exclude Docker-related files
+Dockerfile
+.dockerignore
+
+# Exclude IDE/editor specific files
+.vscode/
+.idea/
+
+# Exclude test directories and files
+tests/
+*.test
+
+# Exclude documentation
+docs/
+*.md
+
+# Exclude media and assets not needed in the image
+assets/
+!assets/audio/
