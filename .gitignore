@@ -3,3 +3,6 @@
 playground.ipynb
 assets/audio
 __pycache__/
+docker-youtube-summarizer
+.vscode/
+.idea/

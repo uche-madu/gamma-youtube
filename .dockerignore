@@ -30,3 +30,5 @@ docs/
 # Exclude media and assets not needed in the image
 assets/
 !assets/audio/
+
+docker-youtube-summarizer/
