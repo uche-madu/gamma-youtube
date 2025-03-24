@@ -8,25 +8,29 @@ from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
+from loguru import logger
 
 from app.schemas.state import State
 from app.services.youtube_service import search_youtube_video, get_youtube_transcript
 from app.services.tts_service import text_to_speech
-from app.config import MODEL_NAME, TOGETHER_API_KEY
+from app.settings import settings
 
 
 # Initialize the LLM instance.
 llm = init_chat_model( 
-    model=MODEL_NAME, 
+    model=settings.MODEL_NAME, 
     model_provider="together",
     temperature=0.4,
-    api_key=TOGETHER_API_KEY,
+    api_key=settings.TOGETHER_API_KEY,
 )
 
 # Create the list of tools and bind them.
 tools = [search_youtube_video, get_youtube_transcript]
 tool_node = ToolNode(tools)
 llm_with_tools = llm.bind_tools(tools)
+
+logger.info(f"Registered tools: {[tool.name for tool in tools]}")
+
 
 # Define summarization prompts and chains.
 summarize_prompt = ChatPromptTemplate(
@@ -124,6 +128,7 @@ def should_refine(state: State) -> str:
 def call_model(state: State):
     messages = state["messages"]
     response = llm_with_tools.invoke(messages)
+    logger.info(f"LLM Response: {response}")
     return {"messages": [response]}
 
 def should_continue(state: State) -> str:
@@ -178,7 +183,6 @@ async def summarize_video(query: str, tts: bool = False) -> dict:
     final_state = None
     async for chunk in app.astream(
         {"messages": [("user", query)]},
-        {"recursion_limit": 50},
         stream_mode="values"
     ):
         final_state = chunk
@@ -201,7 +205,7 @@ async def summarize_video(query: str, tts: bool = False) -> dict:
     audio_url = None
     if tts and summary:
         audio_path = text_to_speech(summary)
-        audio_url = f"/{audio_path}"  # Assuming FastAPI serves static files from the 'assets' directory
+        audio_url = f"/{audio_path}"
 
     return {"title": title, "summary": summary, "video_link": video_link, "audio_url": audio_url}
 

@@ -2,7 +2,7 @@
 
 services:
   fastapi_app:
-    image: us-west1-docker.pkg.dev/wizeline-deb/gamma-docker-repo/uchemadu/gamma-youtube-summarizer:latest
+    image: us-west1-docker.pkg.dev/wizeline-deb/gamma-docker-repo/uchemadu/gamma-youtube-summarizer
     container_name: gamma-youtube-summarizer
     build:
       context: .
